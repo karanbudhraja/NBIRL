@@ -1,4 +1,4 @@
 NBIRL
 =====
 
-Budhraja, Karan K., and Tim Oates. "Neuroevolution-Based Inverse Reinforcement Learning." arXiv preprint arXiv:1608.02971 (2016).
+Budhraja, Karan K., and Tim Oates. "Neuroevolution-based inverse reinforcement learning." Evolutionary Computation (CEC), 2017 IEEE Congress on. IEEE, 2017.
