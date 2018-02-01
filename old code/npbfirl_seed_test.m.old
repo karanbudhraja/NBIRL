@@ -1,0 +1,41 @@
+% Convenience script for running a single test.
+addpaths;
+run('Utilities/cvx/cvx_setup.m');
+
+n = 4;
+b = 1;
+training_sample_lengths = 4;
+training_samples = 8;
+verbosity = 0;
+
+% karan: policy type for npbfirl can be mean or map
+
+seed_max_value = 10;
+
+scores_npbfirl_mean = zeros(1,seed_max_value);
+
+for seed = 1:seed_max_value
+
+    seed
+
+    test_result_npbfirl_mean = runtest('npbfirl',struct('policy_type','mean','seed',seed),...
+			      'linearmdp','gridworld',struct('n',n,'b',b),...
+			      struct('training_sample_lengths',training_sample_lengths,'training_samples',training_samples,...
+				     'verbosity',verbosity,'test_metrics',{{'misprediction'}}));
+    score = test_result_npbfirl_mean.metric_scores{2}(2);
+    scores_npbfirl_mean(seed) = score;
+end
+
+hold on;
+plot(scores_npbfirl_mean, '-k');
+
+savefig('seeds');
+
+
+% Visualize solution.
+%test_result_npbfirl.metric_scores{1}(1)
+%test_result_npbfirl.metric_scores{2}(1)
+
+%printresult(test_result_firl);
+%printresult(test_result_neat);
+%visualize(test_result);

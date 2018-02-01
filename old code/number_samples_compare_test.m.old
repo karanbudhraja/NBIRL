@@ -1,0 +1,167 @@
+% Compare NEAT and FIRL.
+addpaths;
+run('Utilities/cvx/cvx_setup.m');
+
+% taking standard arguments from toolkit test
+b = 1;
+
+%{
+training_sample_length = 1;
+max_training_samples = 8;
+grid_size = 4;
+number_training_samples_list = 2:max_training_samples;
+%}
+%% testing on a standard grid proportion: 32(n):16(samples):8(length)
+
+training_sample_length = 4;
+max_training_samples = 24;
+grid_size = 16;
+number_training_samples_list = 1:max_training_samples;
+
+verbosity = 0;
+
+algorithm_seed = -1; % no seed
+max_generations = 50;
+population_size = 50;
+
+iterations = 25;
+gpirl_total_linear_mdp_scores = zeros(1,length(number_training_samples_list));
+gpirl_total_standard_mdp_scores = zeros(1,length(number_training_samples_list));
+neat_total_linear_mdp_scores = zeros(1,length(number_training_samples_list));
+neat_total_standard_mdp_scores = zeros(1,length(number_training_samples_list));
+npbfirl_total_linear_mdp_scores = zeros(1,length(number_training_samples_list));
+npbfirl_total_standard_mdp_scores = zeros(1,length(number_training_samples_list));
+
+gpirl_total_times = zeros(1,length(number_training_samples_list));
+neat_total_times = zeros(1,length(number_training_samples_list));
+npbfirl_total_times = zeros(1,length(number_training_samples_list));
+
+parfor iteration = 1:iterations
+    
+    iteration
+    algorithm_seed = iteration;
+    
+    if(algorithm_seed >= 22)
+        % bad seed
+        algorithm_seed = algorithm_seed + 4;
+    end
+
+    if( (algorithm_seed == 8) || (algorithm_seed == 16) || (algorithm_seed == 12) || (algorithm_seed == 5) || (algorithm_seed == 2) || (algorithm_seed == 10) || (algorithm_seed == 14) ) 
+        % bad seed
+        algorithm_seed = algorithm_seed + 30;
+    end
+    
+    standard_mdp_scores = [];
+    linear_mdp_scores = [];
+    current_times = [];
+
+    for index = 1:length(number_training_samples_list)
+
+        training_samples = number_training_samples_list(index);
+		test_result_gpirl = runtest('gpirl',struct('seed',algorithm_seed),...
+			'linearmdp','gridworld',struct('n',grid_size,'b',b,'seed',algorithm_seed),...
+			struct('training_sample_lengths',training_sample_length,'training_samples',training_samples,...
+			'verbosity',verbosity,'test_metrics',{{'misprediction'}}));
+        
+        standard_mdp_score = test_result_gpirl.metric_scores{1}(2);
+        linear_mdp_score = test_result_gpirl.metric_scores{2}(2);
+
+        standard_mdp_scores = [standard_mdp_scores; standard_mdp_score];
+        linear_mdp_scores = [linear_mdp_scores; linear_mdp_score];
+	    current_times = [current_times; test_result_gpirl.time];
+    end
+    
+    gpirl_total_standard_mdp_scores = gpirl_total_standard_mdp_scores + standard_mdp_scores';
+    gpirl_total_linear_mdp_scores = gpirl_total_linear_mdp_scores + linear_mdp_scores';
+    gpirl_total_times = gpirl_total_times + current_times';
+
+    standard_mdp_scores = [];
+    linear_mdp_scores = [];
+    current_times = [];
+    
+    for index = 1:length(number_training_samples_list)
+        training_samples = number_training_samples_list(index);
+		test_result_neat = runtest('neat',struct('seed',algorithm_seed,'population_size',population_size,'max_generations',max_generations),...
+            'linearmdp','gridworld',struct('n',grid_size,'b',b,'seed',algorithm_seed),...
+            struct('training_sample_lengths',training_sample_length,'training_samples',training_samples,...
+            'verbosity',verbosity,'test_metrics',{{'misprediction'}}));
+
+        standard_mdp_score = test_result_neat.metric_scores{1}(2);
+        linear_mdp_score = test_result_neat.metric_scores{2}(2);
+        
+        standard_mdp_scores = [standard_mdp_scores; standard_mdp_score];
+        linear_mdp_scores = [linear_mdp_scores; linear_mdp_score];
+	    current_times = [current_times; test_result_neat.time];
+    end
+    
+    neat_total_standard_mdp_scores = neat_total_standard_mdp_scores + standard_mdp_scores';
+    neat_total_linear_mdp_scores = neat_total_linear_mdp_scores + linear_mdp_scores'; 
+    neat_total_times = neat_total_times + current_times';        
+
+    standard_mdp_scores = [];
+    linear_mdp_scores = [];
+    current_times = [];
+    
+    for index = 1:length(number_training_samples_list)
+        training_samples = number_training_samples_list(index);
+		test_result_neat = runtest('npbfirl',struct('seed',algorithm_seed,'policy_type','mean'),...
+            'linearmdp','gridworld',struct('n',grid_size,'b',b,'seed',algorithm_seed),...
+            struct('training_sample_lengths',training_sample_length,'training_samples',training_samples,...
+            'verbosity',verbosity,'test_metrics',{{'misprediction'}}));
+
+        standard_mdp_score = test_result_neat.metric_scores{1}(2);
+        linear_mdp_score = test_result_neat.metric_scores{2}(2);
+        
+        standard_mdp_scores = [standard_mdp_scores; standard_mdp_score];
+        linear_mdp_scores = [linear_mdp_scores; linear_mdp_score];
+	    current_times = [current_times; test_result_neat.time];
+    end
+    
+    npbfirl_total_standard_mdp_scores = npbfirl_total_standard_mdp_scores + standard_mdp_scores';
+    npbfirl_total_linear_mdp_scores = npbfirl_total_linear_mdp_scores + linear_mdp_scores'; 
+    npbfirl_total_times = npbfirl_total_times + current_times';
+end
+
+%%
+
+gpirl_average_standard_mdp_scores = gpirl_total_standard_mdp_scores/iterations;
+gpirl_average_linear_mdp_scores = gpirl_total_linear_mdp_scores/iterations;
+neat_average_standard_mdp_scores = neat_total_standard_mdp_scores/iterations;
+neat_average_linear_mdp_scores = neat_total_linear_mdp_scores/iterations;
+npbfirl_average_standard_mdp_scores = npbfirl_total_standard_mdp_scores/iterations;
+npbfirl_average_linear_mdp_scores = npbfirl_total_linear_mdp_scores/iterations;
+
+gpirl_average_times = gpirl_total_times/iterations;
+neat_average_times = neat_total_times/iterations;
+npbfirl_average_times = npbfirl_total_times/iterations;
+
+figure;
+hold on;
+%{
+plot(number_training_samples_list, gpirl_average_standard_mdp_scores,'-^k');
+plot(number_training_samples_list, neat_average_standard_mdp_scores,'-*k');
+plot(number_training_samples_list, npbfirl_average_standard_mdp_scores,'-ok');
+%}
+plot(number_training_samples_list, gpirl_average_linear_mdp_scores,'--^k');
+plot(number_training_samples_list, neat_average_linear_mdp_scores,'--*k');
+plot(number_training_samples_list, npbfirl_average_linear_mdp_scores,'--ok');
+
+title('Compared MDP Misprediction Score');
+xlabel('Number of Training Samples');
+ylabel('Misprediction Score');
+legend('Location','Best');
+legend('GPIRL','NEAT-IRL','NPBFIRL (mean)');
+savefig('misprediction');
+
+figure;
+hold on;
+plot(number_training_samples_list, gpirl_average_times,'-^k');
+plot(number_training_samples_list, neat_average_times,'-*k');
+plot(number_training_samples_list, npbfirl_average_times,'-ok');
+
+title('Execution Time');
+xlabel('Number of Training Samples');
+ylabel('Execution Time');
+legend('Location','Best');
+legend('GPIRL','NEAT-IRL','NPBFIRL (mean)');
+savefig('time');
